@@ -1,0 +1,79 @@
+from selenium import webdriver
+from selenium.webdriver import Keys
+from selenium.webdriver.common.by import By
+import time
+import random
+
+def get_hatnote(browser):
+    hatnotes = []
+    for element in browser.find_elements(By.TAG_NAME, "div"):
+        cl = element.get_attribute("class")
+        if "hatnote" in cl:
+            hatnotes.append(element)
+    if len(hatnotes) == 0:
+        return None
+    hatnote = random.choice(hatnotes)
+    link = hatnote.find_element(By.TAG_NAME, "a").get_attribute("href")
+    return link
+
+def get_paragraphs(browser):
+    paragraphs = browser.find_elements(By.TAG_NAME, "p")
+    return paragraphs
+
+def get_user_choice():
+    user_choice = input("Выберите действие: \n 1 - Читать параграфы текущей статьи "
+                        "\n 2 - Перейти на одну из связанных страниц  "
+                        "\n 3 - Выйти из программы \n")
+    return user_choice
+
+def show_paragraphs(paragraphs):
+    for paragraph in paragraphs:
+        print(paragraph.text)
+        print("\n")
+        input()
+
+def go_to_hatnote(browser):
+    link = get_hatnote(browser)
+    if link is None:
+        print("Нет связанных страниц")
+        exit()
+    browser.get(link)
+    time.sleep(1)
+    print(browser.title)
+    user_choice = get_user_choice()
+    if user_choice == "1":
+        paragraphs = get_paragraphs(browser)
+        show_paragraphs(paragraphs)
+    elif user_choice == "2":
+        go_to_hatnote(browser)
+    elif user_choice == "3":
+        exit()
+
+
+browser = webdriver.Edge()
+user_search = input("Что ищем? ")
+user_search_split = user_search.split()
+browser.get("https://ru.wikipedia.org/wiki/Заглавная_страница")
+time.sleep(1)
+search_box = browser.find_element(By.ID, "searchInput")
+search_box.send_keys(user_search)
+search_box.send_keys(Keys.RETURN)
+time.sleep(1)
+results = browser.find_elements(By.CLASS_NAME, "mw-search-result-heading")
+for result in results:
+    title = result.find_element(By.TAG_NAME, "a")
+    print(title.text)
+    if all(e.lower() in title.text.lower() for e in user_search_split):
+        title.click()
+        break
+time.sleep(1)
+user_choice = get_user_choice()
+if user_choice == "1":
+    paragraphs = get_paragraphs(browser)
+    show_paragraphs(paragraphs)
+elif user_choice == "2":
+    go_to_hatnote(browser)
+elif user_choice == "3":
+    exit()
+
+browser.refresh()
